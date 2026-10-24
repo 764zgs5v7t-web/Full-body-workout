@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101214">
+<title>Full Body — Training Log</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #101214;
+    --panel: #191d20;
+    --panel-2: #20262a;
+    --text: #f4f6f7;
+    --muted: #a0a9ae;
+    --line: #30383d;
+    --accent: #b6f36b;
+    --accent-dark: #263719;
+    --danger: #ff8d8d;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #202820 0, var(--bg) 42rem);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    padding: 0 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  .app { width: 100%; max-width: 650px; margin: 0 auto; padding-top: calc(20px + env(safe-area-inset-top)); }
+  header { margin: 4px 0 22px; }
+  .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
+  h1 { margin: 8px 0 6px; font-size: clamp(28px, 7vw, 38px); line-height: 1.05; letter-spacing: -.04em; }
+  .subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+  .day-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 20px 0 14px; }
+  .day-tab {
+    min-height: 54px; border: 1px solid var(--line); border-radius: 14px;
+    color: var(--muted); background: var(--panel); font: inherit; font-weight: 750;
+    cursor: pointer; padding: 10px 6px; -webkit-tap-highlight-color: transparent;
+  }
+  .day-tab span { display: block; font-size: 11px; font-weight: 600; margin-top: 3px; }
+  .day-tab[aria-selected="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+  .summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .summary h2 { margin: 0 0 5px; font-size: 17px; }
+  .summary p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .progress-ring {
+    flex: 0 0 58px; width: 58px; height: 58px; border-radius: 50%;
+    display: grid; place-items: center; background: conic-gradient(var(--accent) var(--progress, 0%), #343b3f 0);
+    position: relative; font-size: 12px; font-weight: 800;
+  }
+  .progress-ring::before { content: ""; position: absolute; inset: 5px; background: var(--panel); border-radius: 50%; }
+  .progress-ring strong { position: relative; }
+  .warmup { border: 1px solid #435637; background: #1d2819; border-radius: 14px; padding: 14px 15px; margin-bottom: 20px; }
+  .warmup-title { color: var(--accent); font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+  .warmup p { margin: 0; color: #d5e0ce; font-size: 13px; line-height: 1.5; }
+  .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 2px 10px; }
+  .section-heading h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .12em; margin: 0; }
+  .section-heading span { color: var(--muted); font-size: 12px; }
+  .exercise-list { display: grid; gap: 10px; }
+  .exercise { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: border-color .15s; }
+  .exercise.all-done { border-color: #526b3d; }
+  .exercise-top { display: flex; align-items: center; gap: 12px; padding: 14px; }
+  .exercise-number { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 9px; display: grid; place-items: center; background: var(--panel-2); color: var(--muted); font-size: 12px; font-weight: 800; }
+  .exercise-info { min-width: 0; flex: 1; }
+  .exercise-name { font-size: 15px; font-weight: 750; line-height: 1.3; }
+  .exercise-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .exercise.all-done .exercise-name { color: #c5d5bb; }
+  .set-row { display: flex; gap: 8px; padding: 0 14px 14px 54px; }
+  .set-check {
+    display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1;
+    min-height: 42px; border: 1px solid var(--line); border-radius: 11px; background: #141719;
+    color: var(--muted); font-size: 12px; font-weight: 750; cursor: pointer; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .set-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .checkmark { width: 17px; height: 17px; display: inline-grid; place-items: center; border: 1.5px solid #69747a; border-radius: 5px; font-size: 12px; }
+  .set-check:has(input:checked) { background: var(--accent-dark); border-color: #658747; color: var(--accent); }
+  .set-check input:checked + .checkmark { background: var(--accent); border-color: var(--accent); color: #101214; }
+  .set-check input:checked + .checkmark::after { content: "✓"; font-weight: 900; }
+  .set-check:focus-within, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .footer-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .action {
+    flex: 1; min-height: 46px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--panel); color: var(--text); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer;
+  }
+  .action.primary { background: var(--accent); border-color: var(--accent); color: #101214; }
+  .small-note { color: var(--muted); text-align: center; font-size: 11px; line-height: 1.5; margin: 17px 8px 0; }
+  @media (min-width: 520px) { body { padding-left: 24px; padding-right: 24px; } .exercise-top { padding: 16px; } .set-row { padding-left: 56px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="eyebrow">Training log · 3 days per week</div>
+    <h1>FULL BODY<span style="color:var(--accent)">.</span></h1>
+    <p class="subtitle">Show up. Track your sets. Build over time.</p>
+  </header>
+
+  <nav class="day-tabs" role="tablist" aria-label="Select workout day">
+    <button class="day-tab" role="tab" id="tab-0" aria-controls="workout" aria-selected="true" data-day="0">DAY 1<span>Chest + quads</span></button>
+    <button class="day-tab" role="tab" id="tab-1" aria-controls="workout" aria-selected="false" data-day="1">DAY 2<span>Back + posterior</span></button>
+    <button class="day-tab" role="tab" id="tab-2" aria-controls="workout" aria-selected="false" data-day="2">DAY 3<span>Balanced</span></button>
+  </nav>
+
+  <section id="workout" role="tabpanel" aria-labelledby="tab-0">
+    <div class="summary">
+      <div><h2 id="day-title">Chest & quads emphasis</h2><p id="progress-text">0 of 17 sets completed</p></div>
+      <div class="progress-ring" id="progress-ring" style="--progress:0%"><strong id="progress-percent">0%</strong></div>
+    </div>
+    <div class="warmup">
+      <div class="warmup-title">⚡ Warm-up focus</div>
+      <p id="warmup-text"></p>
+    </div>
+    <div class="section-heading"><h3>Exercises</h3><span id="exercise-count">7 exercises</span></div>
+    <div class="exercise-list" id="exercise-list"></div>
+    <div class="footer-actions">
+      <button class="action" id="reset-day" type="button">Reset this day</button>
+      <button class="action primary" id="complete-day" type="button">Complete all sets ✓</button>
+    </div>
+    <p class="small-note">Your checkmarks save automatically on this device. Use “Reset this day” to clear a workout when you start again.</p>
+  </section>
+</main>
+<script>
+const workouts = [
+  {
+    title: "Chest & quads emphasis",
+    warmup: "Leg press and incline press. Do lighter ramp-up sets before each.",
+    exercises: [
+      ["Leg press machine", 3, "8–12 reps"],
+      ["Smith machine incline press", 3, "6–10 reps"],
+      ["Low row machine", 3, "8–12 reps"],
+      ["Seated leg curl", 2, "10–15 reps"],
+      ["Lateral raise machine", 2, "12–20 reps"],
+      ["Bayesian curl", 2, "10–15 reps"],
+      ["Overhead triceps extension", 2, "10–15 reps"]
+    ]
+  },
+  {
+    title: "Back & posterior emphasis",
+    warmup: "Pull-ups and dumbbell bench press. Use assisted or easier pull-ups initially if necessary, followed by lighter pressing sets.",
+    exercises: [
+      ["Pull-ups (working towards weighted)", 3, "6–10 reps"],
+      ["Dumbbell bench press", 3, "8–12 reps"],
+      ["Quad extension", 3, "10–15 reps"],
+      ["Seated leg curl OR comfortable hip thrust", 3, "10–15 reps"],
+      ["Plate-loaded shoulder press", 2, "8–12 reps"],
+      ["Preacher curl", 2, "10–15 reps"],
+      ["Cable triceps pushdown", 2, "10–15 reps"]
+    ]
+  },
+  {
+    title: "Balanced full body",
+    warmup: "Leg press and your chosen pressing exercise. Add a light row warm-up if needed.",
+    exercises: [
+      ["Leg press", 3, "8–12 reps"],
+      ["Cable row", 3, "8–12 reps"],
+      ["Smith machine shoulder press OR high incline press", 3, "8–12 reps"],
+      ["Seated leg curl", 3, "10–15 reps"],
+      ["Reverse fly (rear delts)", 2, "12–20 reps"],
+      ["Biceps exercise of choice", 2, "10–15 reps"],
+      ["Triceps exercise of choice", 2, "10–15 reps"]
+    ]
+  }
+];
+
+const STORAGE_KEY = "fullBodyTrainingLog_v1";
+let activeDay = 0;
+let checkedSets = loadProgress();
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return saved && typeof saved === "object" ? saved : {};
+  } catch (e) { return {}; }
+}
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedSets)); }
+  catch (e) { console.warn("Could not save workout progress in LocalStorage.", e); }
+}
+function isChecked(day, exercise, set) {
+  return Boolean(checkedSets[`${day}-${exercise}-${set}`]);
+}
+function setChecked(day, exercise, set, value) {
+  const key = `${day}-${exercise}-${set}`;
+  if (value) checkedSets[key] = true;
+  else delete checkedSets[key];
+  saveProgress();
+  updateProgress();
+}
+function renderWorkout(day) {
+  activeDay = day;
+  document.querySelectorAll(".day-tab").forEach((tab, i) => {
+    tab.setAttribute("aria-selected", String(i === day));
+    tab.tabIndex = i === day ? 0 : -1;
+  });
+  document.getElementById("workout").setAttribute("aria-labelledby", `tab-${day}`);
+  const workout = workouts[day];
+  document.getElementById("day-title").textContent = workout.title;
+  document.getElementById("warmup-text").textContent = workout.warmup;
+  document.getElementById("exercise-count").textContent = `${workout.exercises.length} exercises`;
+  const list = document.getElementById("exercise-list");
+  list.innerHTML = "";
+  workout.exercises.forEach(([name, sets, reps], exerciseIndex) => {
+    const card = document.createElement("article");
+    card.className = "exercise";
+    card.dataset.exercise = exerciseIndex;
+    const top = document.createElement("div");
+    top.className = "exercise-top";
+    const number = document.createElement("div");
+    number.className = "exercise-number";
+    number.textContent = String(exerciseIndex + 1).padStart(2, "0");
+    const info = document.createElement("div");
+    info.className = "exercise-info";
+    const exerciseName = document.createElement("div");
+    exerciseName.className = "exercise-name";
+    exerciseName.textContent = name;
+    const meta = document.createElement("div");
+    meta.className = "exercise-meta";
+    meta.textContent = `${sets} sets · ${reps}`;
+    info.append(exerciseName, meta);
+    top.append(number, info);
+    const setRow = document.createElement("div");
+    setRow.className = "set-row";
+    for (let set = 0; set < sets; set++) {
+      const label = document.createElement("label");
+      label.className = "set-check";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = isChecked(day, exerciseIndex, set);
+      input.setAttribute("aria-label", `${name}, set ${set + 1}`);
+      const mark = document.createElement("span");
+      mark.className = "checkmark";
+      const text = document.createElement("span");
+      text.textContent = `Set ${set + 1}`;
+      input.addEventListener("change", () => setChecked(day, exerciseIndex, set, input.checked));
+      label.append(input, mark, text);
+      setRow.append(label);
+    }
+    card.append(top, setRow);
+    list.append(card);
+  });
+  updateProgress();
+}
+function updateProgress() {
+  const total = workouts[activeDay].exercises.reduce((sum, exercise) => sum + exercise[1], 0);
+  let completed = 0;
+  workouts[activeDay].exercises.forEach((exercise, exerciseIndex) => {
+    for (let set = 0; set < exercise[1]; set++) if (isChecked(activeDay, exerciseIndex, set)) completed++;
+    const card = document.querySelector(`[data-exercise="${exerciseIndex}"]`);
+    if (card) card.classList.toggle("all-done",
+      Array.from({length: exercise[1]}, (_, set) => isChecked(activeDay, exerciseIndex, set)).every(Boolean));
+  });
+  const percent = total ? Math.round(completed / total * 100) : 0;
+  document.getElementById("progress-text").textContent = `${completed} of ${total} sets completed`;
+  document.getElementById("progress-percent").textContent = `${percent}%`;
+  document.getElementById("progress-ring").style.setProperty("--progress", `${percent}%`);
+}
+document.querySelectorAll(".day-tab").forEach(tab => {
+  tab.addEventListener("click", () => renderWorkout(Number(tab.dataset.day)));
+});
+document.getElementById("reset-day").addEventListener("click", () => {
+  if (!confirm("Clear all checked sets for this day?")) return;
+  workouts[activeDay].exercises.forEach((exercise, exerciseIndex) => {
+    for (let set = 0; set < exercise[1]; set++) delete checkedSets[`${activeDay}-${exerciseIndex}-${set}`];
+  });
+  saveProgress();
+  renderWorkout(activeDay);
+});
+document.getElementById("complete-day").addEventListener("click", () => {
+  workouts[activeDay].exercises.forEach((exercise, exerciseIndex) => {
+    for (let set = 0; set < exercise[1]; set++) checkedSets[`${activeDay}-${exerciseIndex}-${set}`] = true;
+  });
+  saveProgress();
+  renderWorkout(activeDay);
+});
+renderWorkout(0);
+</script>
+</body>
+</html>
